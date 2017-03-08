@@ -15,17 +15,21 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %v [OPTIONS]\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "OPTIONS:\n")
-		fmt.Fprintf(os.Stderr, "   -major, -minor, -patch   increase version part. default is -patch\n")
-		fmt.Fprintf(os.Stderr, "   -build <build-name>      include additional build name (e.g. alpha)\n")
-		fmt.Fprintf(os.Stderr, "   -version <version>       specify the release version. ignores other version modifiers.\n")
-		fmt.Fprintf(os.Stderr, "   -h                       print this help.\n")
+		fmt.Fprintf(os.Stderr, "   -major, -minor, -patch, -pre   increase version part. default is -patch.\n")
+		fmt.Fprintf(os.Stderr, "                                  only -pre may be combined with others.\n")
+		fmt.Fprintf(os.Stderr, "   -version <version>             specify the release version. ignores other version modifiers.\n")
+		fmt.Fprintf(os.Stderr, "   -pre-version <pre-release>     specify the pre-release version. default is 'RC' (when only -pre is set).\n")
+		fmt.Fprintf(os.Stderr, "   -dry                           do not change anything. just print the result.\n")
+		fmt.Fprintf(os.Stderr, "   -h                             print this help.\n")
 	}
 
-	major := flag.Bool("major", false, "increase major version")
-	minor := flag.Bool("minor", false, "increase minor version")
-	patch := flag.Bool("patch", false, "increase patch version")
-	build := flag.String("build", "", "set build")
-	newVersion := flag.String("version", "", "set build")
+	major := flag.Bool("major", false, "")
+	minor := flag.Bool("minor", false, "")
+	patch := flag.Bool("patch", false, "")
+	pre := flag.Bool("pre", false, "")
+	newVersion := flag.String("version", "", "")
+	newPreVersion := flag.String("pre-version", "", "")
+	dry := flag.Bool("dry", false, "")
 
 	flag.Parse()
 
@@ -50,37 +54,61 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Failed to get version from git: %v\n", err)
 			os.Exit(1)
 		}
-		if (major == nil || *major == false) && (minor == nil || *minor == false) && (patch == nil || *patch == false) {
-			*patch = true
+		if !*major && !*minor && !*patch && !*pre {
+			*patch = true //Default is patch
 		}
 	}
 
 	if *major {
 		version.Major++
-	}
-	if *minor {
+		version.Minor = 0
+		version.Patch = 0
+		version.Pre = nil
+		version.Build = nil
+	} else if *minor {
 		version.Minor++
-	}
-	if *patch {
+		version.Patch = 0
+		version.Pre = nil
+		version.Build = nil
+	} else if *patch {
 		version.Patch++
+		version.Pre = nil
+		version.Build = nil
 	}
-	if *build != "" {
-		version.Build = []string{*build}
+	if *pre {
+		if newPreVersion == nil || *newPreVersion == "" {
+			*newPreVersion = "RC"
+		}
+
+		preVersion, err := semver.NewPRVersion(*newPreVersion)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid : %v\n", err)
+			os.Exit(1)
+		}
+		version.Pre = []semver.PRVersion{preVersion}
 	}
 
-	fmt.Fprintf(os.Stdout, "Tagging version %v.\n", version.String())
-	if err = tag(version); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
+	dryRunInfo := ""
+	if *dry {
+		dryRunInfo = "[dry-run] "
+	}
+	fmt.Fprintf(os.Stdout, "%vTagging version %v.\n", dryRunInfo, version.String())
+	if !*dry {
+		if err = tag(version); err != nil {
+			fmt.Fprintf(os.Stderr, "%v", err)
+			os.Exit(1)
+		}
 	}
 
-	fmt.Fprintf(os.Stdout, "Pushing tag.\n")
-	if err = push(); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		os.Exit(1)
+	fmt.Fprintf(os.Stdout, "%vPushing tag.\n", dryRunInfo)
+	if !*dry {
+		if err = push(); err != nil {
+			fmt.Fprintf(os.Stderr, "%v", err)
+			os.Exit(1)
+		}
 	}
 
-	fmt.Fprintf(os.Stdout, "Release %v successful.\n", version.String())
+	fmt.Fprintf(os.Stdout, "%vRelease %v successful.\n", dryRunInfo, version.String())
 
 }
 
@@ -151,19 +179,18 @@ func hasChanges() bool {
 	cmd := exec.Command("git", "status", "--porcelain")
 	lineCount, err := countOutputLines(cmd)
 
-	if err!= nil || lineCount > 0 {
+	if err != nil || lineCount > 0 {
 		return true
 	}
 
 	return false
 }
 
-
 func hasStagedChanges() bool {
 	cmd := exec.Command("git", "cherry", "-v")
 	lineCount, err := countOutputLines(cmd)
 
-	if err!= nil || lineCount > 0 {
+	if err != nil || lineCount > 0 {
 		return true
 	}
 
@@ -182,7 +209,7 @@ func isBehind() (bool, error) {
 	cmd = exec.Command("git", "--no-pager", "log", "HEAD..@{u}", "--oneline")
 	lineCount, err := countOutputLines(cmd)
 
-	if err!= nil {
+	if err != nil {
 		return true, err
 	}
 
