@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"io/ioutil"
 	"bufio"
+	"regexp"
+	"strconv"
 )
 
 func main() {
@@ -18,7 +20,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "   -major, -minor, -patch, -pre   increase version part. default is -patch.\n")
 		fmt.Fprintf(os.Stderr, "                                  only -pre may be combined with others.\n")
 		fmt.Fprintf(os.Stderr, "   -version <version>             specify the release version. ignores other version modifiers.\n")
-		fmt.Fprintf(os.Stderr, "   -pre-version <pre-release>     specify the pre-release version. default is 'RC' (when only -pre is set).\n")
+		fmt.Fprintf(os.Stderr, "   -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).\n")
 		fmt.Fprintf(os.Stderr, "   -dry                           do not change anything. just print the result.\n")
 		fmt.Fprintf(os.Stderr, "   -h                             print this help.\n")
 	}
@@ -33,11 +35,11 @@ func main() {
 
 	flag.Parse()
 
-	err := checkRepoStatus()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+	if newPreVersion != nil && *newPreVersion != "" {
+		*pre = true
 	}
+
+	var err error
 	version := semver.Version{}
 	if newVersion != nil && *newVersion != "" {
 		ver, err := semver.New(*newVersion)
@@ -75,16 +77,29 @@ func main() {
 		version.Pre = nil
 		version.Build = nil
 	}
+
 	if *pre {
+		var preVersion semver.PRVersion
+
 		if newPreVersion == nil || *newPreVersion == "" {
-			*newPreVersion = "RC"
+			if len(version.Pre) > 0 {
+				preVersion = version.Pre[0]
+			} else {
+				preVersion, err = semver.NewPRVersion("RC0")
+			}
+			if preVersion.IsNum {
+				preVersion.VersionNum++
+			} else {
+				bumpPreVersion(&preVersion)
+			}
+		} else {
+			preVersion, err = semver.NewPRVersion(*newPreVersion)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Invalid : %v\n", err)
+				os.Exit(1)
+			}
 		}
 
-		preVersion, err := semver.NewPRVersion(*newPreVersion)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid : %v\n", err)
-			os.Exit(1)
-		}
 		version.Pre = []semver.PRVersion{preVersion}
 	}
 
@@ -92,7 +107,15 @@ func main() {
 	if *dry {
 		dryRunInfo = "[dry-run] "
 	}
-	fmt.Fprintf(os.Stdout, "%vTagging version %v.\n", dryRunInfo, version.String())
+	fmt.Fprintf(os.Stdout, "%vReleasing version %v.\n", dryRunInfo, version.String())
+
+	err = checkRepoStatus()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(os.Stdout, "%vTagging.\n", dryRunInfo)
 	if !*dry {
 		if err = tag(version); err != nil {
 			fmt.Fprintf(os.Stderr, "%v", err)
@@ -128,7 +151,7 @@ func getVersionFromGit() (semver.Version, error) {
 	}
 
 	versionText := scanner.Text()
-	fmt.Fprintf(os.Stdout, "Latest git version is '%v'.", versionText)
+	fmt.Fprintf(os.Stdout, "Latest git version is '%v'.\n", versionText)
 	return semver.Parse(versionText)
 }
 
@@ -260,4 +283,20 @@ func push() error {
 	}
 
 	return nil
+}
+
+func bumpPreVersion(version *semver.PRVersion) {
+	re := regexp.MustCompile("[0-9]+$")
+	loc := re.FindStringIndex(version.String())
+
+	if len(loc) == 0 { //no matches
+		version.VersionStr = version.VersionStr + "1"
+		return
+	}
+
+	versionName := version.VersionStr[:loc[0]]
+	versionNum, _ := strconv.Atoi(version.VersionStr[loc[0]:])
+
+	version.VersionStr = fmt.Sprintf("%s%d", versionName, versionNum+1)
+
 }

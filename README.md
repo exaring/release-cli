@@ -11,44 +11,55 @@ Make sure $GOPATH/bin is on your PATH.
 > release -h
 Usage: release [OPTIONS]
 OPTIONS:
-   -major, -minor, -patch   increase version part. default is -patch
-   -build <build-name>      include additional build name (e.g. alpha)
-   -version <version>       specify the release version. ignores other version modifiers.
-   -h                       print this help.
+   -major, -minor, -patch, -pre   increase version part. default is -patch.
+                                  only -pre may be combined with others.
+   -version <version>             specify the release version. ignores other version modifiers.
+   -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).
+   -dry                           do not change anything. just print the result.
+   -h                             print this help.
 ```
 
 ## Example
 ```bash
 # release a defined version
 > release -version 1.0.0
-Tagging version 1.0.0.
+Releasing version 1.0.0.
+Tagging.
 Pushing tag.
 Release 1.0.0 successful.
 
 # release the next patch release (default)
 > release
-Tagging version 1.0.1.
+Retrieving old version from git.
+Latest git version is '1.0.0'.
+Releasing version 1.0.1.
+Tagging.
 Pushing tag.
 Release 1.0.1 successful.
 
 # release the next minor version
 > release -minor
-Retrieving old version from git.
-Latest git version is '1.0.1'.Tagging version 1.1.1.
+Latest git version is '1.0.1'.
+Releasing version 1.1.0.
+Tagging.
 Pushing tag.
-Release 1.1.1 successful.
+Release 1.1.0 successful.
 
-# release the next version with bumped minor and patch parts
-> release -minor -patch
+# release a major pre-release
+> release -major -pre
 Retrieving old version from git.
-Latest git version is '1.1.1'.Tagging version 1.2.2.
+Latest git version is '1.1.0'.
+Releasing version 2.0.0-RC1.
+Tagging.
 Pushing tag.
-Release 1.2.2 successful.
+Release 2.0.0-RC1 successful.
 
-# release a new defined version with all parts bumped and an additional build part
-> release -major -minor -patch -build=alpha -version 1.0.0
-bin/release -minor -patch -build=alpha -version 1.0.0
-Tagging version 2.1.1+alpha.
+# release a specific pre-release version
+> release -pre-version debug1
+Retrieving old version from git.
+Latest git version is '2.0.0-RC1'.
+Releasing version 2.0.0-debug1.
+Tagging.
 Pushing tag.
-Release 2.1.1+alpha successful.
+Release 2.0.0-debug1 successful.
 ```
