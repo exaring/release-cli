@@ -16,6 +16,7 @@ OPTIONS:
    -version <version>             specify the release version. ignores other version modifiers.
    -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).
    -dry                           do not change anything. just print the result.
+   -f                             ignore untracked & uncommitted changes.
    -h                             print this help.
 ```
 
