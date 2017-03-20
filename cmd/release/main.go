@@ -22,6 +22,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "   -version <version>             specify the release version. ignores other version modifiers.\n")
 		fmt.Fprintf(os.Stderr, "   -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).\n")
 		fmt.Fprintf(os.Stderr, "   -dry                           do not change anything. just print the result.\n")
+		fmt.Fprintf(os.Stderr, "   -f                             ignore untracked & uncommitted changes.\n")
 		fmt.Fprintf(os.Stderr, "   -h                             print this help.\n")
 	}
 
@@ -32,6 +33,7 @@ func main() {
 	newVersion := flag.String("version", "", "")
 	newPreVersion := flag.String("pre-version", "", "")
 	dry := flag.Bool("dry", false, "")
+	force := flag.Bool("f", false, "")
 
 	flag.Parse()
 
@@ -109,7 +111,7 @@ func main() {
 	}
 	fmt.Fprintf(os.Stdout, "%vReleasing version %v.\n", dryRunInfo, version.String())
 
-	err = checkRepoStatus()
+	err = checkRepoStatus(*force)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -155,7 +157,7 @@ func getVersionFromGit() (semver.Version, error) {
 	return semver.Parse(versionText)
 }
 
-func checkRepoStatus() error {
+func checkRepoStatus(force bool) error {
 	if !isGitAvailable() {
 		return fmt.Errorf("git is not available.")
 	}
@@ -164,7 +166,7 @@ func checkRepoStatus() error {
 		return fmt.Errorf("Not a git repository.")
 	}
 
-	if hasChanges() {
+	if !force && hasChanges() {
 		return fmt.Errorf("Your repository has uncommited changes.")
 	}
 
