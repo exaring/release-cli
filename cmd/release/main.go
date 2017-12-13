@@ -1,14 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
-	"os"
 	"github.com/blang/semver"
-	"bytes"
-	"os/exec"
 	"io/ioutil"
-	"bufio"
+	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 )
