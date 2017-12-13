@@ -138,7 +138,7 @@ func main() {
 }
 
 func getVersionFromGit() (semver.Version, error) {
-	cmd := exec.Command("git", "tag", "--sort=-version:refname")
+	cmd := exec.Command("git", "tag", "--sort=-creatordate")
 	result := &bytes.Buffer{}
 	cmd.Stdout = result
 	cmd.Stderr = result
