@@ -1,1 +1,104 @@
 /bin/
+
+
+package repository
+
+import (
+	"context"
+	"fmt"
+
+	"gopkg.in/src-d/go-git.v4/config"
+
+	"gopkg.in/src-d/go-git.v4"
+	"gopkg.in/src-d/go-git.v4/plumbing"
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
+)
+
+type Repository struct {
+	repository *git.Repository
+}
+
+func New(path string) (*Repository, error) {
+	repo, err := git.PlainOpen(path)
+	if err != nil {
+		return nil, err
+	}
+	return &Repository{
+		repository: repo,
+	}, nil
+}
+
+func (repo *Repository) LatestTag() (string, error) {
+	tagRefs, err := repo.repository.Tags()
+	if err != nil {
+		return "", err
+	}
+
+	var latestTag string
+	if err = tagRefs.ForEach(func(tagRef *plumbing.Reference) error {
+		revision := plumbing.Revision(tagRef.Name().String())
+		tagCommitHash, err := repo.repository.ResolveRevision(revision)
+		if err != nil {
+			return err
+		}
+
+		commit, err := repo.repository.CommitObject(*tagCommitHash)
+		if err != nil {
+			return err
+		}
+
+		latestTagCommit := commit
+		latestTag = tagRef.Name().String()
+
+		if commit.Committer.When.After(latestTagCommit.Committer.When) {
+			latestTagCommit = commit
+			latestTag = tagRef.Name().String()
+		}
+
+		return nil
+	}); err != nil {
+		return latestTag, nil
+	}
+
+	return latestTag, nil
+}
+
+func (repo *Repository) IsSafe() error {
+	return nil
+}
+
+func (r *Repository) CreateTag(tag string) error {
+	ref, _ := r.repository.Head()
+	commit, err := r.repository.CommitObject(ref.Hash())
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(commit.Hash.String())
+	o := object.Tag{
+		Name:       tag,
+		Message:    fmt.Sprintf("Release of %v", tag),
+		Hash:       commit.Hash,
+		TargetType: plumbing.CommitObject,
+	}
+
+	encodedObject := r.repository.Storer.NewEncodedObject()
+	if err := o.Encode(encodedObject); err != nil {
+		return err
+	}
+
+	hash, err := r.repository.Storer.SetEncodedObject(encodedObject)
+	if err != nil {
+		return err
+	}
+
+	return r.repository.Storer.SetReference(plumbing.NewReferenceFromStrings("refs/tags/"+tag, hash.String()))
+}
+
+func (r *Repository) Push(ctx context.Context) error {
+	return r.repository.PushContext(ctx, &git.PushOptions{
+		RefSpecs: []config.RefSpec{
+			"refs/tags/*:refs/tags/*",
+		},
+	})
+}
