@@ -13,10 +13,10 @@ type sshLexer struct {
 	input         *buffruneio.Reader // Textual source
 	buffer        []rune             // Runes composing the current token
 	tokens        chan token
-	line          int
-	col           int
-	endbufferLine int
-	endbufferCol  int
+	line          uint32
+	col           uint16
+	endbufferLine uint32
+	endbufferCol  uint16
 }
 
 func (s *sshLexer) lexComment(previousState sshLexStateFn) sshLexStateFn {

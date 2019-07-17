@@ -26,30 +26,21 @@ type Auth struct {
 	User, Password string
 }
 
-// FromEnvironment returns the dialer specified by the proxy-related
-// variables in the environment and makes underlying connections
-// directly.
+// FromEnvironment returns the dialer specified by the proxy related variables in
+// the environment.
 func FromEnvironment() Dialer {
-	return FromEnvironmentUsing(Direct)
-}
-
-// FromEnvironmentUsing returns the dialer specify by the proxy-related
-// variables in the environment and makes underlying connections
-// using the provided forwarding Dialer (for instance, a *net.Dialer
-// with desired configuration).
-func FromEnvironmentUsing(forward Dialer) Dialer {
 	allProxy := allProxyEnv.Get()
 	if len(allProxy) == 0 {
-		return forward
+		return Direct
 	}
 
 	proxyURL, err := url.Parse(allProxy)
 	if err != nil {
-		return forward
+		return Direct
 	}
-	proxy, err := FromURL(proxyURL, forward)
+	proxy, err := FromURL(proxyURL, Direct)
 	if err != nil {
-		return forward
+		return Direct
 	}
 
 	noProxy := noProxyEnv.Get()
@@ -57,7 +48,7 @@ func FromEnvironmentUsing(forward Dialer) Dialer {
 		return proxy
 	}
 
-	perHost := NewPerHost(proxy, forward)
+	perHost := NewPerHost(proxy, Direct)
 	perHost.AddFromString(noProxy)
 	return perHost
 }
