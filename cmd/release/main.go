@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 
-	"github.com/am3o/release-cli/pkg/version"
-
-	"github.com/am3o/release-cli/pkg/repository"
+	"github.com/exaring/release-cli/pkg/repository"
+	"github.com/exaring/release-cli/pkg/version"
 
 	"github.com/sirupsen/logrus"
 
@@ -21,6 +21,7 @@ func main() {
 
 	var (
 		flagMajor, flagMinor, flagPatch, flagPre, dryRun, force bool
+		flagLog                                                 string
 	)
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
@@ -59,6 +60,12 @@ func main() {
 			Usage:       "ignore untracked & uncommitted changes.",
 			EnvVar:      "FORCE",
 		},
+		cli.StringFlag{
+			Name:        "l, log",
+			Destination: &flagLog,
+			Usage:       "specifics the log level of the output",
+			EnvVar:      "LOG_LEVEL",
+		},
 	}
 
 	app.Action = run
@@ -67,39 +74,72 @@ func main() {
 	}
 }
 
+type Repository interface {
+	LatestCommitHash() string
+	ExistsTag(version string) (bool, error)
+	Tags() []string
+	IsSafe(ctx context.Context) error
+	CreateTag(tag string) error
+	DeleteTag(tag string) error
+	Push(ctx context.Context) error
+}
+
 func run(ctx *cli.Context) error {
-	var logger logrus.FieldLogger = logrus.StandardLogger()
-	var mode string
-	if ctx.IsSet("dry") {
-		mode = "[dry-run] "
+	switch ctx.String("log") {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
 	}
+	logger := logrus.StandardLogger()
+	dryModus := ctx.IsSet("dry")
 
 	currentPath, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	logger.WithField("repository", currentPath).Infof("%vRead the directory", mode)
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Dry":        dryModus,
+	}).Debug("Read the directory")
 
-	repo, err := repository.New(currentPath)
+	var repo Repository
+	repo, err = repository.New(currentPath)
 	if err != nil {
 		return err
 	}
-	logger.WithField("repository", currentPath).Infof("%vAnalyse the git repository", mode)
 
+	if ctx.IsSet("dry") {
+		repo = repository.NewNoOp()
+	}
+
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Dry":        dryModus,
+	}).Debug("Analyse the git repository")
 	currentTag, err := LatestTag(repo)
 	if err != nil {
 		return err
 	}
 	logger.WithFields(logrus.Fields{
-		"repository": currentPath,
+		"Repository": currentPath,
 		"Tag":        currentTag,
-	}).Infof("%vDetect latest tag of the repository", mode)
-
-	currentTag.Increase(ctx.IsSet("major"), ctx.IsSet("minor"), ctx.IsSet("patch"), ctx.IsSet("pre"))
-	logger.WithFields(logrus.Fields{
 		"repository": currentPath,
-		"tag":        currentTag,
-	}).Infof("%vCreate new releasing version", mode)
+		"Dry":        dryModus,
+	}).Debug("Detect latest tag of the repository")
+
+	currentTag.Increase(
+		ctx.IsSet("major"),
+		ctx.IsSet("minor"),
+		ctx.IsSet("patch"),
+		ctx.IsSet("pre"))
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Tag":        currentTag,
+		"Dry":        dryModus,
+	}).Info("Create new releasing version")
 
 	if err := repo.IsSafe(context.Background()); !ctx.IsSet("force") && err != nil {
 		return err
@@ -114,7 +154,8 @@ func run(ctx *cli.Context) error {
 	logger.WithFields(logrus.Fields{
 		"Repository": currentPath,
 		"Version":    currentTag,
-	}).Infof("%vTagging the current repository", mode)
+		"Dry":        dryModus,
+	}).Debug("Tagging the current repository")
 
 	if err := repo.Push(context.Background()); err != nil {
 		if err := repo.DeleteTag(currentTag.String()); err != nil {
@@ -125,7 +166,8 @@ func run(ctx *cli.Context) error {
 	logger.WithFields(logrus.Fields{
 		"Repository": currentPath,
 		"Version":    currentTag,
-	}).Infof("%vPushing new tag to the origin repository", mode)
+		"Dry":        dryModus,
+	}).Debug("Pushing new tag to the origin repository")
 
 	currentTag, err = LatestTag(repo)
 	if err != nil {
@@ -134,26 +176,27 @@ func run(ctx *cli.Context) error {
 	logger.WithFields(logrus.Fields{
 		"Repository": currentPath,
 		"Version":    currentTag,
-	}).Infof("%vRelease new version", mode)
+		"Dry":        dryModus,
+	}).Info("Release new version")
 
 	return nil
 }
 
-type Repository interface {
-	Tags() []string
-}
-
 func LatestTag(vc Repository) (version.Version, error) {
-	var lihtweightTags version.Versions
+	var lightweightTags version.Versions
 	for _, tag := range vc.Tags() {
 		o, err := version.New(tag)
 		if err != nil {
 			return version.Version{}, err
 		}
-		lihtweightTags = append(lihtweightTags, o)
+		lightweightTags = append(lightweightTags, o)
 	}
 
-	sort.Sort(lihtweightTags)
+	sort.Sort(lightweightTags)
 
-	return lihtweightTags[len(lihtweightTags)-1], nil
+	if len(lightweightTags) > 0 {
+		return lightweightTags[len(lightweightTags)-1], nil
+	}
+
+	return version.Version{}, fmt.Errorf("the version list is empty")
 }

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"gopkg.in/src-d/go-git.v4/config"
@@ -12,21 +13,21 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 )
 
-type VersioningController struct {
+type Git struct {
 	client *git.Repository
 }
 
-func New(path string) (*VersioningController, error) {
+func New(path string) (*Git, error) {
 	repo, err := git.PlainOpen(path)
 	if err != nil {
 		return nil, err
 	}
-	return &VersioningController{
+	return &Git{
 		client: repo,
 	}, nil
 }
 
-func (vc *VersioningController) LatestCommitHash() string {
+func (vc *Git) LatestCommitHash() string {
 	headRef, err := vc.client.Head()
 	if err != nil {
 		return ""
@@ -35,7 +36,7 @@ func (vc *VersioningController) LatestCommitHash() string {
 	return headRef.Hash().String()
 }
 
-func (vc *VersioningController) ExistsTag(version string) (bool, error) {
+func (vc *Git) ExistsTag(version string) (bool, error) {
 	t, err := vc.client.Tags()
 	if err != nil {
 		return false, err
@@ -54,7 +55,7 @@ func (vc *VersioningController) ExistsTag(version string) (bool, error) {
 	return existsTag, nil
 }
 
-func (vc *VersioningController) Tags() []string {
+func (vc *Git) Tags() []string {
 	tIter, err := vc.client.Tags()
 	if err != nil {
 		return nil
@@ -71,7 +72,7 @@ func (vc *VersioningController) Tags() []string {
 	return tags
 }
 
-func (vc *VersioningController) IsSafe(ctx context.Context) error {
+func (vc *Git) IsSafe(ctx context.Context) error {
 	if hasUncomittedChanges, err := vc.HasUncommittedChanges(); err != nil {
 		return err
 	} else if hasUncomittedChanges {
@@ -94,7 +95,7 @@ func (vc *VersioningController) IsSafe(ctx context.Context) error {
 	return nil
 }
 
-func (vc *VersioningController) HasUncommittedChanges() (bool, error) {
+func (vc *Git) HasUncommittedChanges() (bool, error) {
 	w, err := vc.client.Worktree()
 	if err != nil {
 		return false, err
@@ -108,12 +109,12 @@ func (vc *VersioningController) HasUncommittedChanges() (bool, error) {
 	return !status.IsClean(), nil
 }
 
-func (vc *VersioningController) HasStagedChanges() bool {
-	// TODO: unsupported
+func (vc *Git) HasStagedChanges() bool {
+	// TODO: unsupported function from the go-git lib
 	return false
 }
 
-func (vc *VersioningController) IsBehind(ctx context.Context) (bool, error) {
+func (vc *Git) IsBehind(ctx context.Context) (bool, error) {
 	if err := vc.client.FetchContext(ctx, &git.FetchOptions{}); err != nil {
 		return false, err
 	}
@@ -121,20 +122,65 @@ func (vc *VersioningController) IsBehind(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (vc *VersioningController) CreateTag(tag string) error {
+func (vc *Git) CreateTag(tag string) error {
 	name := plumbing.ReferenceName(fmt.Sprintf("refs/tags/%v", tag))
 	reference := plumbing.NewHashReference(name, plumbing.NewHash(vc.LatestCommitHash()))
 	return vc.client.Storer.SetReference(reference)
 }
 
-func (vc *VersioningController) DeleteTag(tag string) error {
+func (vc *Git) DeleteTag(tag string) error {
 	return vc.client.Storer.RemoveReference(
 		plumbing.ReferenceName(fmt.Sprintf("refs/tags/%v", tag)),
 	)
 }
 
-func (vc *VersioningController) Push(ctx context.Context) error {
+func (vc *Git) Push(ctx context.Context) error {
 	return vc.client.PushContext(ctx, &git.PushOptions{
 		RefSpecs: []config.RefSpec{"refs/tags/*:refs/tags/*"},
 	})
+}
+
+type NoOpRepository struct {
+}
+
+func NewNoOp() *NoOpRepository {
+	return &NoOpRepository{}
+}
+
+func (noop *NoOpRepository) LatestCommitHash() string {
+	return ""
+}
+
+func (noop *NoOpRepository) ExistsTag(version string) (bool, error) {
+	return true, nil
+}
+
+func (noop *NoOpRepository) Tags() []string {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	repository, err := New(currentPath)
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	return repository.Tags()
+}
+
+func (noop *NoOpRepository) IsSafe(ctx context.Context) error {
+	return nil
+}
+
+func (noop *NoOpRepository) CreateTag(tag string) error {
+	return nil
+}
+
+func (noop *NoOpRepository) DeleteTag(tag string) error {
+	return nil
+}
+
+func (noop *NoOpRepository) Push(ctx context.Context) error {
+	return nil
 }
