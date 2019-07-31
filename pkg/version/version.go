@@ -15,7 +15,7 @@ const (
 	RegExPatternVersionString = `((\d+)\.(\d+)\.(\d+))(?:-RC([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?`
 )
 
-type Version []uint8
+type Version []uint
 
 func New(v string) (Version, error) {
 	r := regexp.
@@ -29,12 +29,12 @@ func New(v string) (Version, error) {
 
 	var version Version
 	for i := 2; i < len(r); i++ {
-		version = append(version, func(o string) uint8 {
-			number, err := strconv.ParseInt(o, 10, 8)
+		version = append(version, func(o string) uint {
+			number, err := strconv.ParseInt(o, 10, 64)
 			if err != nil {
 				return 0
 			}
-			return uint8(number)
+			return uint(number)
 		}(r[i]))
 	}
 
