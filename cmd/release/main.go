@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/exaring/release-cli/pkg/repository"
 	"github.com/exaring/release-cli/pkg/version"
@@ -17,12 +18,13 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "release-cli (release tool)"
-	app.Version = "experimental-build"
+	app.Version = fmt.Sprintf("experimental-build:%v", time.Now().Unix())
 
 	var (
 		flagMajor, flagMinor, flagPatch, flagPre, dryRun, force bool
 		flagLog                                                 string
 	)
+
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
 			Name:        "major",
@@ -67,6 +69,9 @@ func main() {
 			EnvVar:      "LOG_LEVEL",
 		},
 	}
+
+	var exitCode int
+	defer os.Exit(exitCode)
 
 	app.Action = run
 	if err := app.Run(os.Args); err != nil {
