@@ -29,13 +29,12 @@ func New(v string) (Version, error) {
 
 	var version Version
 	for i := 2; i < len(r); i++ {
-		version = append(version, func(o string) uint {
-			number, err := strconv.ParseInt(o, 10, 64)
-			if err != nil {
-				return 0
-			}
-			return uint(number)
-		}(r[i]))
+		number, err := strconv.ParseInt(r[i], 10, 64)
+		if err != nil {
+			number = 0
+		}
+
+		version = append(version, uint(number))
 	}
 
 	return version, nil
