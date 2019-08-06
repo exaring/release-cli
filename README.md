@@ -1,5 +1,7 @@
 # release cli
 [![Go Report Card](https://goreportcard.com/badge/github.com/Am3o/release-cli)](https://goreportcard.com/report/github.com/Am3o/release-cli)
+[![Build Status](https://travis-ci.org/Am3o/release-cli.svg?branch=master)](https://travis-ci.org/Am3o/release-cli)
+[![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/Am3o/release-cli) 
 
 A command line tool for a simple release workflow based on git tags: check repo state, bump version, tag and push --tags
 
