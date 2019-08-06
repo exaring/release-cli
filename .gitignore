@@ -1,104 +1,107 @@
+# Created by https://www.gitignore.io/api/go,intellij
+# Edit at https://www.gitignore.io/?templates=go,intellij
+
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+### Go Patch ###
+# /vendor/
+# /Godeps/
 /bin/
 
+### Intellij ###
+# Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
-package repository
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
 
-import (
-	"context"
-	"fmt"
+# Generated files
+.idea/**/contentModel.xml
 
-	"gopkg.in/src-d/go-git.v4/config"
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
 
-	"gopkg.in/src-d/go-git.v4"
-	"gopkg.in/src-d/go-git.v4/plumbing"
-	"gopkg.in/src-d/go-git.v4/plumbing/object"
-)
+# Gradle
+.idea/**/gradle.xml
+.idea/**/libraries
 
-type Repository struct {
-	repository *git.Repository
-}
+# Gradle and Maven with auto-import
+# When using Gradle or Maven with auto-import, you should exclude module files,
+# since they will be recreated, and may cause churn.  Uncomment if using
+# auto-import.
+# .idea/modules.xml
+# .idea/*.iml
+# .idea/modules
+# *.iml
+# *.ipr
 
-func New(path string) (*Repository, error) {
-	repo, err := git.PlainOpen(path)
-	if err != nil {
-		return nil, err
-	}
-	return &Repository{
-		repository: repo,
-	}, nil
-}
+# CMake
+cmake-build-*/
 
-func (repo *Repository) LatestTag() (string, error) {
-	tagRefs, err := repo.repository.Tags()
-	if err != nil {
-		return "", err
-	}
+# Mongo Explorer plugin
+.idea/**/mongoSettings.xml
 
-	var latestTag string
-	if err = tagRefs.ForEach(func(tagRef *plumbing.Reference) error {
-		revision := plumbing.Revision(tagRef.Name().String())
-		tagCommitHash, err := repo.repository.ResolveRevision(revision)
-		if err != nil {
-			return err
-		}
+# File-based project format
+*.iws
 
-		commit, err := repo.repository.CommitObject(*tagCommitHash)
-		if err != nil {
-			return err
-		}
+# IntelliJ
+out/
 
-		latestTagCommit := commit
-		latestTag = tagRef.Name().String()
+# mpeltonen/sbt-idea plugin
+.idea_modules/
 
-		if commit.Committer.When.After(latestTagCommit.Committer.When) {
-			latestTagCommit = commit
-			latestTag = tagRef.Name().String()
-		}
+# JIRA plugin
+atlassian-ide-plugin.xml
 
-		return nil
-	}); err != nil {
-		return latestTag, nil
-	}
+# Cursive Clojure plugin
+.idea/replstate.xml
 
-	return latestTag, nil
-}
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
 
-func (repo *Repository) IsSafe() error {
-	return nil
-}
+# Editor-based Rest Client
+.idea/httpRequests
 
-func (r *Repository) CreateTag(tag string) error {
-	ref, _ := r.repository.Head()
-	commit, err := r.repository.CommitObject(ref.Hash())
-	if err != nil {
-		return err
-	}
+# Android studio 3.1+ serialized cache file
+.idea/caches/build_file_checksums.ser
 
-	fmt.Println(commit.Hash.String())
-	o := object.Tag{
-		Name:       tag,
-		Message:    fmt.Sprintf("Release of %v", tag),
-		Hash:       commit.Hash,
-		TargetType: plumbing.CommitObject,
-	}
+### Intellij Patch ###
+# Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721
 
-	encodedObject := r.repository.Storer.NewEncodedObject()
-	if err := o.Encode(encodedObject); err != nil {
-		return err
-	}
+# *.iml
+# modules.xml
+# .idea/misc.xml
+# *.ipr
 
-	hash, err := r.repository.Storer.SetEncodedObject(encodedObject)
-	if err != nil {
-		return err
-	}
+# Sonarlint plugin
+.idea/sonarlint
 
-	return r.repository.Storer.SetReference(plumbing.NewReferenceFromStrings("refs/tags/"+tag, hash.String()))
-}
-
-func (r *Repository) Push(ctx context.Context) error {
-	return r.repository.PushContext(ctx, &git.PushOptions{
-		RefSpecs: []config.RefSpec{
-			"refs/tags/*:refs/tags/*",
-		},
-	})
-}
+# End of https://www.gitignore.io/api/go,intellij
