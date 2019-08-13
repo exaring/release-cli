@@ -3,25 +3,48 @@
 [![Build Status](https://travis-ci.org/exaring/release-cli.svg?branch=master)](https://travis-ci.org/exaring/release-cli)
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/exaring/release-cli) 
 
-A command line tool for a simple release workflow based on git tags: check repo state, bump version, tag and push --tags
+Release cli is a useful command line tool for semantic version tags. A semantic version has three parts: major, minor, and patch. For example, 
+for v0.1.2, the major version is 0, the minor version is 1, and the patch version is 2. It's necessary for example of the `Go Modules`. For more information read 
+the following article. https://blog.golang.org/using-go-modules
 
-## Install
+## Installation 
+
+Working and tested on macOS
+
+### Source 
 `go get github.com/exaring/release-cli/cmd/release`
 
-Make sure $GOPATH/bin is on your PATH.
+### Prebuilt binaries
+`make install`
 
 ## Use
 ```bash
 > release -h
-Usage: release [OPTIONS]
-OPTIONS:
-   -major, -minor, -patch, -pre   increase version part. default is -patch.
-                                  only -pre may be combined with others.
-   -version <version>             specify the release version. ignores other version modifiers.
-   -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).
-   -dry                           do not change anything. just print the result.
-   -f                             ignore untracked & uncommitted changes.
-   -h                             print this help.
+NAME:
+   release-cli (release tool) - create semantic version tags
+
+USAGE:
+   release [global options] command [command options] [arguments...]
+
+VERSION:
+   v2.0.0-RC1
+
+DESCRIPTION:
+   Release is a useful command line tool for semantic version tags
+
+COMMANDS:
+     help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --major                increase major version part. [$RELEASE_MAJOR]
+   --minor                increase minor version part. [$RELEASE_MINOR]
+   --patch                increase patch version part. This is the default increased part. [$RELEASE_PATCH]
+   --pre                  increase release candidate version part. [$RELEASE_PRE]
+   -d, --dry              do not change anything. just print the result. [$DRY_RUN]
+   -f, --force            ignore untracked & uncommitted changes. [$FORCE]
+   -l value, --log value  specifics the log level of the output [$LOG_LEVEL]
+   --help, -h             show help
+   --version, -v          print the version
 ```
 
 ## Example

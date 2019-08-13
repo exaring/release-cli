@@ -14,4 +14,4 @@ build: test
 
 install: test
 	@printf "\033[01;33m>> Running install\033[0m\n"
-	go install ./cmd/release
+	go install -ldflags '-X main.Version=$(GIT_TAG)' ./cmd/release

@@ -19,6 +19,8 @@ var Version = "v0.0.0"
 func main() {
 	app := cli.NewApp()
 	app.Name = "release-cli (release tool)"
+	app.Usage = "create semantic version tags"
+	app.Description = "Release is a useful command line tool for semantic version tags"
 	app.Version = Version
 
 	var (
