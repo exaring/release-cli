@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"time"
 
 	"github.com/exaring/release-cli/pkg/repository"
 	"github.com/exaring/release-cli/pkg/version"
@@ -15,10 +14,12 @@ import (
 	"github.com/urfave/cli"
 )
 
+var Version = "v0.0.0"
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "release-cli (release tool)"
-	app.Version = fmt.Sprintf("experimental-build:%v", time.Now().Unix())
+	app.Version = Version
 
 	var (
 		flagMajor, flagMinor, flagPatch, flagPre, dryRun, force bool
