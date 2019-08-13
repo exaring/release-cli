@@ -79,6 +79,7 @@ func main() {
 	app.Action = run
 	if err := app.Run(os.Args); err != nil {
 		logrus.WithError(err).Error("Couldn't release a new version")
+		exitCode = 1
 	}
 }
 

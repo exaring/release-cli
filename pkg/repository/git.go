@@ -73,9 +73,9 @@ func (vc *Git) Tags() []string {
 }
 
 func (vc *Git) IsSafe(ctx context.Context) error {
-	if hasUncomittedChanges, err := vc.HasUncommittedChanges(); err != nil {
+	if hasUncommittedChanges, err := vc.HasUncommittedChanges(); err != nil {
 		return err
-	} else if hasUncomittedChanges {
+	} else if hasUncommittedChanges {
 		return fmt.Errorf("your client has uncommited changes.")
 	}
 
