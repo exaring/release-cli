@@ -49,13 +49,6 @@ GLOBAL OPTIONS:
 
 ## Example
 ```bash
-# release a defined version
-> release -version 1.0.0
-Releasing version 1.0.0.
-Tagging.
-Pushing tag.
-Release 1.0.0 successful.
-
 # release the next patch release (default)
 > release
 Retrieving old version from git.
@@ -81,13 +74,4 @@ Releasing version 2.0.0-RC1.
 Tagging.
 Pushing tag.
 Release 2.0.0-RC1 successful.
-
-# release a specific pre-release version
-> release -pre-version debug1
-Retrieving old version from git.
-Latest git version is '2.0.0-RC1'.
-Releasing version 2.0.0-debug1.
-Tagging.
-Pushing tag.
-Release 2.0.0-debug1 successful.
 ```
