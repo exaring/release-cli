@@ -1,5 +1,5 @@
 # release cli
-[![license](https://img.shields.io/badge/license-apache-red.svg?style=flat)](https://raw.githubusercontent.com/github.com/exaring/master/LICENSE) 
+[![license](https://img.shields.io/badge/license-apache-red.svg?style=flat)](https://raw.githubusercontent.com/github.com/exaring/release-cli/blob/master/LICENSE) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/exaring/release-cli)](https://goreportcard.com/report/github.com/exaring/release-cli)
 [![Build Status](https://travis-ci.org/exaring/release-cli.svg?branch=master)](https://travis-ci.org/exaring/release-cli)
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/exaring/release-cli) 
