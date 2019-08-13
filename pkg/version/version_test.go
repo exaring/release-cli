@@ -7,9 +7,9 @@ import (
 func TestNew(t *testing.T) {
 	tt := []struct {
 		value    string
-		expected []uint8
+		expected []uint
 	}{
-		{"", []uint8{0, 0, 0, 0}},
+		{"", []uint{0, 0, 0, 0}},
 		{"1", Version{0, 0, 0, 0}},
 		{"1.1", Version{0, 0, 0, 0}},
 		{".", Version{0, 0, 0, 0}},
@@ -47,7 +47,7 @@ func TestVersion_Increase(t *testing.T) {
 	tt := []struct {
 		value                    string
 		major, minor, patch, pre bool
-		expected                 []uint8
+		expected                 []uint
 	}{
 		{"0.0.0", false, false, false, true, Version{0, 0, 1, 1}},
 		{"0.0.0", false, false, true, false, Version{0, 0, 1, 0}},
