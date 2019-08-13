@@ -76,7 +76,7 @@ func (vc *Git) IsSafe(ctx context.Context) error {
 	if hasUncommittedChanges, err := vc.HasUncommittedChanges(); err != nil {
 		return err
 	} else if hasUncommittedChanges {
-		return fmt.Errorf("your client has uncommited changes.")
+		return fmt.Errorf("your client has uncommitted changes.")
 	}
 
 	if vc.HasStagedChanges() {

@@ -73,13 +73,10 @@ func main() {
 		},
 	}
 
-	var exitCode int
-	defer os.Exit(exitCode)
-
 	app.Action = run
 	if err := app.Run(os.Args); err != nil {
 		logrus.WithError(err).Error("Couldn't release a new version")
-		exitCode = 1
+		os.Exit(1)
 	}
 }
 
