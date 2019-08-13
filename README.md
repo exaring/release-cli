@@ -5,7 +5,11 @@
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/exaring/release-cli) 
 
 Release cli is a useful command-line tool for semantic version tags. A semantic version has three parts: major, minor, and patch. For example, 
-for v0.1.2, the major version is 0, the minor version is 1, and the patch version is 2. It's necessary for example of the `Go Modules`. For more information read the following article. https://blog.golang.org/using-go-modules
+for v0.1.2, the major version is 0, the minor version is 1, and the patch version is 2. 
+
+It's necessary for example of the `Go Modules`. For more information read the following article. https://blog.golang.org/using-go-modules
+
+<p align="center"><img src="/release_cli.gif?raw=true"/></p>
 
 ## Installation 
 
