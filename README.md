@@ -55,28 +55,32 @@ GLOBAL OPTIONS:
 ## Example
 ```bash
 # release the next patch release (default)
-> release
-Retrieving old version from git.
-Latest git version is '1.0.0'.
-Releasing version 1.0.1.
-Tagging.
-Pushing tag.
-Release 1.0.1 successful.
+> release -l debug
+DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.1 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v4.2.2
+DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
+DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
+INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
 
 # release the next minor version
 > release -minor
-Latest git version is '1.0.1'.
-Releasing version 1.1.0.
-Tagging.
-Pushing tag.
-Release 1.1.0 successful.
+DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.2 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v4.3.0
+DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
+DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
+INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
 
 # release a major pre-release
 > release -major -pre
-Retrieving old version from git.
-Latest git version is '1.1.0'.
-Releasing version 2.0.0-RC1.
-Tagging.
-Pushing tag.
-Release 2.0.0-RC1 successful.
+DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
+DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.1 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v5.0.0-RC1
+DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
+DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
+INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
 ```
