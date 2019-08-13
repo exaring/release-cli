@@ -3,18 +3,18 @@
 [![Build Status](https://travis-ci.org/exaring/release-cli.svg?branch=master)](https://travis-ci.org/exaring/release-cli)
 [![godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/exaring/release-cli) 
 
-Release cli is a useful command line tool for semantic version tags. A semantic version has three parts: major, minor, and patch. For example, 
-for v0.1.2, the major version is 0, the minor version is 1, and the patch version is 2. It's necessary for example of the `Go Modules`. For more information read 
-the following article. https://blog.golang.org/using-go-modules
+Release cli is a useful command-line tool for semantic version tags. A semantic version has three parts: major, minor, and patch. For example, 
+for v0.1.2, the major version is 0, the minor version is 1, and the patch version is 2. It's necessary for example of the `Go Modules`. For more information read the following article. https://blog.golang.org/using-go-modules
 
 ## Installation 
 
-Working and tested on macOS
+Install using the "go get" command:
 
-### Source 
 `go get github.com/exaring/release-cli/cmd/release`
 
 ### Prebuilt binaries
+Clone the repo and then run the makefile
+
 `make install`
 
 ## Use
