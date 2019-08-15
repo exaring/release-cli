@@ -69,7 +69,7 @@ DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/t
 INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
 
 # release the next minor version
-> release -minor
+> release -l debug -minor
 DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
 DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
 DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.2 repository=/tmp/dirty-repo
@@ -79,7 +79,7 @@ DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/t
 INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
 
 # release a major pre-release
-> release -major -pre
+> release -l debug -major -pre
 DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
 DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
 DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.1 repository=/tmp/dirty-repo
