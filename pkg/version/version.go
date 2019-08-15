@@ -17,6 +17,7 @@ const (
 
 type Version []uint
 
+// New creates an new instance of the version.
 func New(v string) (Version, error) {
 	r := regexp.
 		MustCompile(RegExPatternVersionString).
@@ -40,6 +41,7 @@ func New(v string) (Version, error) {
 	return version, nil
 }
 
+// Increase increase the semantic version by the values of major, minor, patch and pre.
 func (v Version) Increase(major, minor, patch, pre bool) {
 	switch {
 	case v.IsReleaseCandidate() && (major || minor || patch):
@@ -67,10 +69,12 @@ func (v Version) Increase(major, minor, patch, pre bool) {
 	v.IncreasePre(pre)
 }
 
+// IsReleaseCandidate validates the version for a release candidate.
 func (v Version) IsReleaseCandidate() bool {
 	return v[Pre] > 0
 }
 
+// IncreasePre increase the release candidate value of the version.
 func (v *Version) IncreasePre(pre bool) {
 	if pre {
 		v.increaseVersion(Pre)
@@ -90,6 +94,7 @@ func (v Version) increaseVersion(barrier int) {
 	}
 }
 
+// Byte returns the value of the version as byte type.
 func (v Version) Byte() (version uint) {
 	for _, pos := range v {
 		version = (version << 8) + uint(pos)
@@ -97,6 +102,7 @@ func (v Version) Byte() (version uint) {
 	return
 }
 
+// String returns the version as string.
 func (v Version) String() (version string) {
 	if version = fmt.Sprintf("v%v.%v.%v", v[Major], v[Minor], v[Patch]); v.IsReleaseCandidate() {
 		version += fmt.Sprintf("-RC%v", v[Pre])
