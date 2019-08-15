@@ -1,4 +1,4 @@
-# release cli
+# release cli 🚀
 [![license](https://img.shields.io/badge/license-apache-red.svg?style=flat)](https://raw.githubusercontent.com/github.com/exaring/release-cli/blob/master/LICENSE) 
 [![Go Report Card](https://goreportcard.com/badge/github.com/exaring/release-cli)](https://goreportcard.com/report/github.com/exaring/release-cli)
 [![Build Status](https://travis-ci.org/exaring/release-cli.svg?branch=master)](https://travis-ci.org/exaring/release-cli)
@@ -15,12 +15,16 @@ It's necessary for example of the `Go Modules`. For more information read the fo
 
 Install using the "go get" command:
 
-`go get github.com/exaring/release-cli/cmd/release`
+```bash
+go get github.com/exaring/release-cli/cmd/release
+```
 
 ### Prebuilt binaries
 Clone the repo and then run the makefile
 
-`make install`
+```bash
+make install
+```
 
 ## Use
 ```bash
