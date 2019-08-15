@@ -13,6 +13,7 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 )
 
+// Git is the version control client for git
 type Git struct {
 	client *git.Repository
 }
@@ -153,6 +154,7 @@ func (vc *Git) Push(ctx context.Context) error {
 	})
 }
 
+// NoOpRepository is the implementation of an no-operation client.
 type NoOpRepository struct{}
 
 // NewNoOp creates an new instance of the No-Operation object

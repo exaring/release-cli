@@ -14,6 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+// Version is the version of the cli application
 var Version = "v2.0.1"
 
 func main() {
@@ -80,13 +81,22 @@ func main() {
 	}
 }
 
+// Repository is a abstraction of the version control system client
 type Repository interface {
+	// LatestCommitHash returns the latest commit hash of the repository. In case of an error the result is empty.
 	LatestCommitHash() string
+	// ExistsTag validates the parameter version and returns the existence of the repository tag.
 	ExistsTag(version string) (bool, error)
+	// Tags lists all existing tags of the repository.
 	Tags() []string
+	// IsSafe validate the state of the repository and returns an error if the repository is unsafe like include uncommitted files
+	// or the local branch is behind the origin.
 	IsSafe(ctx context.Context) error
+	// CreateTag creates a local version control system tag.
 	CreateTag(tag string) error
+	// DeleteTag deletes a local version control system  tag.
 	DeleteTag(tag string) error
+	// Push pushes the local repo state to the origin.
 	Push(ctx context.Context) error
 }
 
@@ -188,6 +198,7 @@ func run(ctx *cli.Context) error {
 	return nil
 }
 
+// LatestTag returns the latest tag of the repository.
 func LatestTag(vc Repository) (version.Version, error) {
 	var lightweightTags version.Versions
 	for _, tag := range vc.Tags() {

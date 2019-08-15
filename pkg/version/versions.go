@@ -1,5 +1,6 @@
 package version
 
+// Versions is the collection of version.
 type Versions []Version
 
 // Len is the number of elements in the collection.

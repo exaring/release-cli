@@ -7,14 +7,20 @@ import (
 )
 
 const (
+	// Major is the position in the slice of the major value.
 	Major = iota
+	// Minor is the position in the slice of the minor value.
 	Minor
+	// Patch is the position in the slice of the patch value.
 	Patch
+	// Pre is the position in the slice of the pre value.
 	Pre
 
+	// RegExPatternVersionString is the RegEX to parse the version string and detected the major, minor, patch and pre version.
 	RegExPatternVersionString = `((\d+)\.(\d+)\.(\d+))(?:-RC([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?`
 )
 
+// Version is the abstraction of the version.
 type Version []uint
 
 // New creates an new instance of the version.
