@@ -1,304 +1,219 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
-	"flag"
+	"context"
 	"fmt"
-	"github.com/blang/semver"
-	"io/ioutil"
 	"os"
-	"os/exec"
-	"regexp"
-	"strconv"
+	"sort"
+
+	"github.com/exaring/release-cli/pkg/repository"
+	"github.com/exaring/release-cli/pkg/version"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/urfave/cli"
 )
 
+// Version is the version of the cli application
+var Version = "v2.0.1"
+
 func main() {
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %v [OPTIONS]\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "OPTIONS:\n")
-		fmt.Fprintf(os.Stderr, "   -major, -minor, -patch, -pre   increase version part. default is -patch.\n")
-		fmt.Fprintf(os.Stderr, "                                  only -pre may be combined with others.\n")
-		fmt.Fprintf(os.Stderr, "   -version <version>             specify the release version. ignores other version modifiers.\n")
-		fmt.Fprintf(os.Stderr, "   -pre-version <pre-release>     specify the pre-release version. implies -pre. default is 'RC' (when only -pre is set).\n")
-		fmt.Fprintf(os.Stderr, "   -dry                           do not change anything. just print the result.\n")
-		fmt.Fprintf(os.Stderr, "   -f                             ignore untracked & uncommitted changes.\n")
-		fmt.Fprintf(os.Stderr, "   -h                             print this help.\n")
+	app := cli.NewApp()
+	app.Name = "release-cli (release tool)"
+	app.Usage = "create semantic version tags"
+	app.Description = "Release is a useful command line tool for semantic version tags"
+	app.Version = Version
+
+	var (
+		flagMajor, flagMinor, flagPatch, flagPre, dryRun, force bool
+		flagLog                                                 string
+	)
+
+	app.Flags = []cli.Flag{
+		cli.BoolFlag{
+			Name:        "major",
+			Destination: &flagMajor,
+			Usage:       "increase major version part.",
+			EnvVar:      "RELEASE_MAJOR",
+		},
+		cli.BoolFlag{
+			Name:        "minor",
+			Destination: &flagMinor,
+			Usage:       "increase minor version part.",
+			EnvVar:      "RELEASE_MINOR",
+		},
+		cli.BoolFlag{
+			Name:        "patch",
+			Destination: &flagPatch,
+			Usage:       "increase patch version part. This is the default increased part.",
+			EnvVar:      "RELEASE_PATCH",
+		},
+		cli.BoolFlag{
+			Name:        "pre",
+			Destination: &flagPre,
+			Usage:       "increase release candidate version part.",
+			EnvVar:      "RELEASE_PRE",
+		},
+		cli.BoolFlag{
+			Name:        "d, dry",
+			Destination: &dryRun,
+			Usage:       "do not change anything. just print the result.",
+			EnvVar:      "DRY_RUN",
+		},
+		cli.BoolFlag{
+			Name:        "f, force",
+			Destination: &force,
+			Usage:       "ignore untracked & uncommitted changes.",
+			EnvVar:      "FORCE",
+		},
+		cli.StringFlag{
+			Name:        "l, log",
+			Destination: &flagLog,
+			Usage:       "specifics the log level of the output",
+			EnvVar:      "LOG_LEVEL",
+		},
 	}
 
-	major := flag.Bool("major", false, "")
-	minor := flag.Bool("minor", false, "")
-	patch := flag.Bool("patch", false, "")
-	pre := flag.Bool("pre", false, "")
-	newVersion := flag.String("version", "", "")
-	newPreVersion := flag.String("pre-version", "", "")
-	dry := flag.Bool("dry", false, "")
-	force := flag.Bool("f", false, "")
-
-	flag.Parse()
-
-	if newPreVersion != nil && *newPreVersion != "" {
-		*pre = true
-	}
-
-	var err error
-	version := semver.Version{}
-	if newVersion != nil && *newVersion != "" {
-		ver, err := semver.New(*newVersion)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Version string '%v' is not a valid version.\n", newVersion)
-			os.Exit(1)
-		}
-		version = *ver
-	} else {
-		fmt.Fprintf(os.Stdout, "Retrieving old version from git.\n")
-
-		version, err = getVersionFromGit()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to get version from git: %v\n", err)
-			os.Exit(1)
-		}
-		if !*major && !*minor && !*patch && !*pre {
-			*patch = true //Default is patch
-		}
-	}
-
-	if *major {
-		version.Major++
-		version.Minor = 0
-		version.Patch = 0
-		version.Pre = nil
-		version.Build = nil
-	} else if *minor {
-		version.Minor++
-		version.Patch = 0
-		version.Pre = nil
-		version.Build = nil
-	} else if *patch {
-		version.Patch++
-		version.Pre = nil
-		version.Build = nil
-	}
-
-	if *pre {
-		var preVersion semver.PRVersion
-
-		if newPreVersion == nil || *newPreVersion == "" {
-			if len(version.Pre) > 0 {
-				preVersion = version.Pre[0]
-			} else {
-				preVersion, err = semver.NewPRVersion("RC0")
-			}
-			if preVersion.IsNum {
-				preVersion.VersionNum++
-			} else {
-				bumpPreVersion(&preVersion)
-			}
-		} else {
-			preVersion, err = semver.NewPRVersion(*newPreVersion)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Invalid : %v\n", err)
-				os.Exit(1)
-			}
-		}
-
-		version.Pre = []semver.PRVersion{preVersion}
-	}
-
-	dryRunInfo := ""
-	if *dry {
-		dryRunInfo = "[dry-run] "
-	}
-	fmt.Fprintf(os.Stdout, "%vReleasing version %v.\n", dryRunInfo, version.String())
-
-	err = checkRepoStatus(*force)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	app.Action = run
+	if err := app.Run(os.Args); err != nil {
+		logrus.WithError(err).Error("Couldn't release a new version")
 		os.Exit(1)
 	}
-
-	fmt.Fprintf(os.Stdout, "%vTagging.\n", dryRunInfo)
-	if !*dry {
-		if err = tag(version); err != nil {
-			fmt.Fprintf(os.Stderr, "%v", err)
-			os.Exit(1)
-		}
-	}
-
-	fmt.Fprintf(os.Stdout, "%vPushing tag.\n", dryRunInfo)
-	if !*dry {
-		if err = push(); err != nil {
-			fmt.Fprintf(os.Stderr, "%v", err)
-			os.Exit(1)
-		}
-	}
-
-	fmt.Fprintf(os.Stdout, "%vRelease %v successful.\n", dryRunInfo, version.String())
-
 }
 
-func getVersionFromGit() (semver.Version, error) {
-	cmd := exec.Command("git", "tag", "--sort=-creatordate")
-	result := &bytes.Buffer{}
-	cmd.Stdout = result
-	cmd.Stderr = result
-	if err := cmd.Run(); err != nil {
-		return semver.Version{}, fmt.Errorf("Cannot read latest version output from git. %v.\nGit message: %v", err, result.String())
-	}
-
-	scanner := bufio.NewScanner(result)
-	if !scanner.Scan() {
-		return semver.Version{}, fmt.Errorf("No git versions found.")
-
-	}
-
-	versionText := scanner.Text()
-	fmt.Fprintf(os.Stdout, "Latest git version is '%v'.\n", versionText)
-	return semver.Parse(versionText)
+// Repository is a abstraction of the version control system client
+type Repository interface {
+	// LatestCommitHash returns the latest commit hash of the repository. In case of an error the result is empty.
+	LatestCommitHash() string
+	// ExistsTag validates the parameter version and returns the existence of the repository tag.
+	ExistsTag(version string) (bool, error)
+	// Tags lists all existing tags of the repository.
+	Tags() []string
+	// IsSafe validate the state of the repository and returns an error if the repository is unsafe like include uncommitted files
+	// or the local branch is behind the origin.
+	IsSafe(ctx context.Context) error
+	// CreateTag creates a local version control system tag.
+	CreateTag(tag string) error
+	// DeleteTag deletes a local version control system  tag.
+	DeleteTag(tag string) error
+	// Push pushes the local repo state to the origin.
+	Push(ctx context.Context) error
 }
 
-func checkRepoStatus(force bool) error {
-	if !isGitAvailable() {
-		return fmt.Errorf("git is not available.")
+func run(ctx *cli.Context) error {
+	switch ctx.String("log") {
+	case "debug":
+		logrus.SetLevel(logrus.DebugLevel)
+	case "error":
+		logrus.SetLevel(logrus.ErrorLevel)
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
 	}
+	logger := logrus.StandardLogger()
+	dryModus := ctx.IsSet("dry")
 
-	if !isGitRepository() {
-		return fmt.Errorf("Not a git repository.")
-	}
-
-	if !force && hasChanges() {
-		return fmt.Errorf("Your repository has uncommited changes.")
-	}
-
-	if hasStagedChanges() {
-		return fmt.Errorf("Your repository has unpushed changes. Please push.")
-	}
-
-	if val, err := isBehind(); err != nil {
-		return fmt.Errorf("Could not determine remote status: %v.", err)
-	} else if val == true {
-		return fmt.Errorf("Your branch is behind the remote. Please pull.")
-	}
-
-	return nil
-}
-
-func isGitAvailable() bool {
-	cmd := exec.Command("which", "git")
-	if err := cmd.Run(); err != nil {
-		return false
-	}
-
-	return true
-}
-func isGitRepository() bool {
-	cmd := exec.Command("git", "rev-parse", "--git-dir")
-	if err := cmd.Run(); err != nil {
-		return false
-	}
-
-	return true
-}
-
-func hasChanges() bool {
-	cmd := exec.Command("git", "status", "--porcelain")
-	lineCount, err := countOutputLines(cmd)
-
-	if err != nil || lineCount > 0 {
-		return true
-	}
-
-	return false
-}
-
-func hasStagedChanges() bool {
-	cmd := exec.Command("git", "cherry", "-v")
-	lineCount, err := countOutputLines(cmd)
-
-	if err != nil || lineCount > 0 {
-		return true
-	}
-
-	return false
-}
-
-func isBehind() (bool, error) {
-	cmd := exec.Command("git", "fetch")
-	result := &bytes.Buffer{}
-	cmd.Stdout = result
-	cmd.Stderr = result
-	if err := cmd.Run(); err != nil {
-		return true, fmt.Errorf("Failed to fetch remote. %v", err)
-	}
-
-	cmd = exec.Command("git", "--no-pager", "log", "HEAD..@{u}", "--oneline")
-	lineCount, err := countOutputLines(cmd)
-
+	currentPath, err := os.Getwd()
 	if err != nil {
-		return true, err
+		return err
+	}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Dry":        dryModus,
+	}).Debug("Read the directory")
+
+	var repo Repository
+	repo, err = repository.New(currentPath)
+	if err != nil {
+		return err
 	}
 
-	if lineCount > 0 {
-		return true, nil
+	if ctx.IsSet("dry") {
+		repo = repository.NewNoOp()
 	}
 
-	return false, nil
-}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Dry":        dryModus,
+	}).Debug("Analyse the git repository")
+	currentTag, err := LatestTag(repo)
+	if err != nil {
+		return err
+	}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Tag":        currentTag,
+		"repository": currentPath,
+		"Dry":        dryModus,
+	}).Debug("Detect latest tag of the repository")
 
-func countOutputLines(cmd *exec.Cmd) (int, error) {
-	result := &bytes.Buffer{}
-	cmd.Stdout = result
-	if err := cmd.Run(); err != nil {
-		return 1, err
+	currentTag.Increase(
+		ctx.IsSet("major"),
+		ctx.IsSet("minor"),
+		ctx.IsSet("patch"),
+		ctx.IsSet("pre"))
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Tag":        currentTag,
+		"Dry":        dryModus,
+	}).Info("Create new releasing version")
+
+	if err := repo.IsSafe(context.Background()); !ctx.IsSet("force") && err != nil {
+		return err
 	}
 
-	scanner := bufio.NewScanner(result)
-	lineCount := 0
-	for scanner.Scan() {
-		lineCount++
+	if err := repo.CreateTag(currentTag.String()); err != nil {
+		if err := repo.DeleteTag(currentTag.String()); err != nil {
+			logger.WithError(err).Errorf("Couldn't remove the creates tag: %v", currentTag)
+		}
+		return err
 	}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Version":    currentTag,
+		"Dry":        dryModus,
+	}).Debug("Tagging the current repository")
 
-	return lineCount, nil
-}
-
-func tag(version semver.Version) error {
-	cmd := exec.Command("git", "tag", version.String())
-	result := &bytes.Buffer{}
-	cmd.Stdout = result
-	cmd.Stderr = result
-	if err := cmd.Run(); err != nil {
-		output, err := ioutil.ReadAll(result)
-		return fmt.Errorf("Failed to tag. %v\n%v", err, string(output))
+	if err := repo.Push(context.Background()); err != nil {
+		if err := repo.DeleteTag(currentTag.String()); err != nil {
+			logger.WithError(err).Errorf("Couldn't remove the creates tag: %v", currentTag)
+		}
+		return err
 	}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Version":    currentTag,
+		"Dry":        dryModus,
+	}).Debug("Pushing new tag to the origin repository")
+
+	currentTag, err = LatestTag(repo)
+	if err != nil {
+		return err
+	}
+	logger.WithFields(logrus.Fields{
+		"Repository": currentPath,
+		"Version":    currentTag,
+		"Dry":        dryModus,
+	}).Info("Release new version")
 
 	return nil
 }
 
-func push() error {
-	cmd := exec.Command("git", "push", "--tag")
-	result := &bytes.Buffer{}
-	cmd.Stdout = result
-	cmd.Stderr = result
-	if err := cmd.Run(); err != nil {
-		output, err := ioutil.ReadAll(result)
-		return fmt.Errorf("Failed to push tags. %v\n%v", err, string(output))
+// LatestTag returns the latest tag of the repository.
+func LatestTag(vc Repository) (version.Version, error) {
+	var lightweightTags version.Versions
+	for _, tag := range vc.Tags() {
+		o, err := version.New(tag)
+		if err != nil {
+			return version.Version{}, err
+		}
+		lightweightTags = append(lightweightTags, o)
 	}
 
-	return nil
-}
+	sort.Sort(lightweightTags)
 
-func bumpPreVersion(version *semver.PRVersion) {
-	re := regexp.MustCompile("[0-9]+$")
-	loc := re.FindStringIndex(version.String())
-
-	if len(loc) == 0 { //no matches
-		version.VersionStr = version.VersionStr + "1"
-		return
+	if len(lightweightTags) > 0 {
+		return lightweightTags[len(lightweightTags)-1], nil
 	}
 
-	versionName := version.VersionStr[:loc[0]]
-	versionNum, _ := strconv.Atoi(version.VersionStr[loc[0]:])
-
-	version.VersionStr = fmt.Sprintf("%s%d", versionName, versionNum+1)
-
+	return version.Version{}, fmt.Errorf("the version list is empty")
 }

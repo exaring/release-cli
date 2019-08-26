@@ -1,12 +1,17 @@
-.PHONY: default build test vendor
+GIT_TAG := $(shell git tag --sort=-creatordate | head -n1)
+
+.PHONY: default build test install
 
 default: build
 
-build: test
-	go build -o bin/release ./cmd/release
+test:
+	@printf "\033[01;33m>> Running tests\033[0m\n"
+	go test -cover -race $$(go list ./... | grep -v /vendor/ | grep -v /integration | tr "\n" " ")
 
-vendor:
-	go get github.com/rancher/trash
-	rm -rf vendor/
-	trash -u
-	trash
+build: test
+	@printf "\033[01;33m>> Running build\033[0m\n"
+	go build -ldflags '-X main.Version=$(GIT_TAG)' -o bin/release ./cmd/release
+
+install: test
+	@printf "\033[01;33m>> Running install\033[0m\n"
+	go install -ldflags '-X main.Version=$(GIT_TAG)' ./cmd/release
