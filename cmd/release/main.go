@@ -124,10 +124,8 @@ func run(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Dry":        dryModus,
-	}).Debug("Read the directory")
+
+	logger.Debug("Read the directory")
 
 	var repo Repository
 	repo, err = repository.New(currentPath)
@@ -139,10 +137,7 @@ func run(ctx *cli.Context) error {
 		repo = repository.NewNoOp()
 	}
 
-	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Dry":        dryModus,
-	}).Debug("Analyse the git repository")
+	logger.Debug("Analyse the git repository")
 
 	var currentTag version.Version
 	if ctx.IsSet("branch") {
@@ -157,10 +152,7 @@ func run(ctx *cli.Context) error {
 		}
 	}
 	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Tag":        currentTag,
-		"repository": currentPath,
-		"Dry":        dryModus,
+		"Tag": currentTag,
 	}).Debug("Detect latest tag of the repository")
 
 	currentTag.Increase(
@@ -169,9 +161,7 @@ func run(ctx *cli.Context) error {
 		ctx.IsSet("patch"),
 		ctx.IsSet("pre"))
 	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Tag":        currentTag,
-		"Dry":        dryModus,
+		"Tag": currentTag,
 	}).Info("Create new releasing version")
 
 	if err := repo.IsSafe(context.Background()); !ctx.IsSet("force") && err != nil {
@@ -185,9 +175,7 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Version":    currentTag,
-		"Dry":        dryModus,
+		"Version": currentTag,
 	}).Debug("Tagging the current repository")
 
 	if err := repo.Push(context.Background()); err != nil {
@@ -197,9 +185,7 @@ func run(ctx *cli.Context) error {
 		return err
 	}
 	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Version":    currentTag,
-		"Dry":        dryModus,
+		"Version": currentTag,
 	}).Debug("Pushing new tag to the origin repository")
 
 	if ctx.IsSet("branch") {
@@ -213,10 +199,14 @@ func run(ctx *cli.Context) error {
 			return err
 		}
 	}
+
+	if dryModus {
+		logger.Info("Don't publish the new releases, because of the dry-run mode")
+		return nil
+	}
+
 	logger.WithFields(logrus.Fields{
-		"Repository": currentPath,
-		"Version":    currentTag,
-		"Dry":        dryModus,
+		"Version": currentTag,
 	}).Info("Release new version")
 
 	return nil
