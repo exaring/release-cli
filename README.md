@@ -49,6 +49,7 @@ GLOBAL OPTIONS:
    --minor                increase minor version part. [$RELEASE_MINOR]
    --patch                increase patch version part. This is the default increased part. [$RELEASE_PATCH]
    --pre                  increase release candidate version part. [$RELEASE_PRE]
+   --only-master          only track tags related to the master branch when creating new version tags. [ONLY_MASTER]
    -d, --dry              do not change anything. just print the result. [$DRY_RUN]
    -f, --force            ignore untracked & uncommitted changes. [$FORCE]
    -l value, --log value  specifics the log level of the output [$LOG_LEVEL]
