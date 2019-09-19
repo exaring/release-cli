@@ -8,6 +8,8 @@ import (
 
 	"gopkg.in/src-d/go-git.v4/config"
 
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -75,6 +77,109 @@ func (vc *Git) Tags() []string {
 	}
 
 	return tags
+}
+
+// TagRef describes a tag's name with its reference hash.
+type TagRef struct {
+	Name string
+	Hash plumbing.Hash
+}
+
+// MasterTags lists all existing tags associated to commits of the master branch.
+// 1. Get all commit hashes of the master branch.
+// 2. Get all tags of the repository.
+// 3. Check and only return tags whose associated commit hash is commit hash of the master branch.
+func (vc *Git) MasterTags() []string {
+
+	// get master branch reference
+	branch, err := vc.client.Branch("master")
+	if err != nil {
+		return nil
+	}
+	ref, err := vc.client.Reference(branch.Merge, true)
+	if err != nil {
+		return nil
+	}
+
+	// retrieve logs from the branch reference commit
+	logs, err := vc.client.Log(&git.LogOptions{
+		From: ref.Hash(),
+	})
+	if err != nil {
+		return nil
+	}
+	defer logs.Close()
+
+	// channel to collect all commit hashes of the master branch
+	chHash := make(chan plumbing.Hash)
+	chErr := make(chan error)
+	go func() {
+		err = logs.ForEach(func(commit *object.Commit) (err error) {
+			chHash <- commit.Hash
+			return
+		})
+		if err != nil {
+			chErr <- err
+		}
+		close(chErr)
+		close(chHash)
+	}()
+
+	// put commit hashes of master branch in a map
+	commitHashes := make(map[plumbing.Hash]bool)
+hashLoop:
+	for {
+		select {
+		case err = <-chErr:
+			if err != nil {
+				return nil
+			}
+			break hashLoop
+		case h := <-chHash:
+			commitHashes[h] = true
+		}
+	}
+
+	// get all tags of the repository
+	tags, err := vc.client.Tags()
+	if err != nil {
+		return nil
+	}
+
+	// get tag names with their associated commit hash
+	var TagRefs = make(chan TagRef)
+	go func() {
+		err = tags.ForEach(func(ref *plumbing.Reference) (err error) {
+			if annotedTag, err := vc.client.TagObject(ref.Hash()); err != plumbing.ErrObjectNotFound {
+				if annotedTag.TargetType == plumbing.CommitObject {
+					TagRefs <- TagRef{
+						Hash: annotedTag.Target,
+						Name: ref.String(),
+					}
+				}
+				return nil
+			}
+			TagRefs <- TagRef{
+				Hash: ref.Hash(),
+				Name: ref.String(),
+			}
+			return
+		})
+		if err != nil {
+			return
+		}
+		close(TagRefs)
+	}()
+
+	var masterTags = make([]string, 0)
+	for tagRef := range TagRefs {
+		if _, ok := commitHashes[tagRef.Hash]; ok {
+			masterTags = append(masterTags, tagRef.Name)
+		}
+	}
+
+	return masterTags
+
 }
 
 // IsSafe validate the state of the git repo and returns an error if the repo is unsafe like include uncommitted files
@@ -185,6 +290,21 @@ func (noop *NoOpRepository) Tags() []string {
 	}
 
 	return repository.Tags()
+}
+
+// MasterTags does nothing
+func (noop *NoOpRepository) MasterTags() []string {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	repository, err := New(currentPath)
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	return repository.MasterTags()
 }
 
 // IsSafe does nothing.
