@@ -86,9 +86,6 @@ type TagRef struct {
 }
 
 // MasterTags lists all existing tags associated to commits of the master branch.
-// 1. Get all commit hashes of the master branch.
-// 2. Get all tags of the repository.
-// 3. Check and only return tags whose associated commit hash is commit hash of the master branch.
 func (vc *Git) MasterTags() []string {
 
 	// get master branch reference
@@ -101,80 +98,46 @@ func (vc *Git) MasterTags() []string {
 		return nil
 	}
 
-	// retrieve logs from the branch reference commit
+	// get all commit hashes of the master branch
 	logs, err := vc.client.Log(&git.LogOptions{
 		From: ref.Hash(),
 	})
 	if err != nil {
 		return nil
 	}
-	defer logs.Close()
-
-	// channel to collect all commit hashes of the master branch
-	chHash := make(chan plumbing.Hash)
-	chErr := make(chan error)
-	go func() {
-		err = logs.ForEach(func(commit *object.Commit) (err error) {
-			chHash <- commit.Hash
-			return
-		})
-		if err != nil {
-			chErr <- err
-		}
-		close(chErr)
-		close(chHash)
-	}()
-
-	// put commit hashes of master branch in a map
-	commitHashes := make(map[plumbing.Hash]bool)
-hashLoop:
-	for {
-		select {
-		case err = <-chErr:
-			if err != nil {
-				return nil
-			}
-			break hashLoop
-		case h := <-chHash:
-			commitHashes[h] = true
-		}
+	var masterCommits = make(map[plumbing.Hash]bool)
+	if err := logs.ForEach(func(commit *object.Commit) error {
+		masterCommits[commit.Hash] = true
+		return nil
+	}); err != nil {
+		return nil
 	}
+	logs.Close()
 
-	// get all tags of the repository
-	tags, err := vc.client.Tags()
+	// get all tags of the repository with their associated commit hash
+	tIter, err := vc.client.Tags()
 	if err != nil {
 		return nil
 	}
-
-	// get tag names with their associated commit hash
-	var TagRefs = make(chan TagRef)
-	go func() {
-		err = tags.ForEach(func(ref *plumbing.Reference) (err error) {
-			if annotedTag, err := vc.client.TagObject(ref.Hash()); err != plumbing.ErrObjectNotFound {
-				if annotedTag.TargetType == plumbing.CommitObject {
-					TagRefs <- TagRef{
-						Hash: annotedTag.Target,
-						Name: ref.String(),
-					}
-				}
-				return nil
+	var tagsWithCommits = make(map[string]plumbing.Hash)
+	if err := tIter.ForEach(func(ref *plumbing.Reference) error {
+		if annotedTag, err := vc.client.TagObject(ref.Hash()); err != plumbing.ErrObjectNotFound {
+			if annotedTag.TargetType == plumbing.CommitObject {
+				tagsWithCommits[ref.String()] = annotedTag.Target
 			}
-			TagRefs <- TagRef{
-				Hash: ref.Hash(),
-				Name: ref.String(),
-			}
-			return
-		})
-		if err != nil {
-			return
+			return nil
 		}
-		close(TagRefs)
-	}()
+		tagsWithCommits[ref.String()] = ref.Hash()
+		return nil
+	}); err != nil {
+		return nil
+	}
 
+	// only return tags whose associated commit hash belongs to the master branch
 	var masterTags = make([]string, 0)
-	for tagRef := range TagRefs {
-		if _, ok := commitHashes[tagRef.Hash]; ok {
-			masterTags = append(masterTags, tagRef.Name)
+	for tag, commit := range tagsWithCommits {
+		if _, ok := masterCommits[commit]; ok {
+			masterTags = append(masterTags, tag)
 		}
 	}
 
