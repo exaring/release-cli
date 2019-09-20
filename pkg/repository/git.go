@@ -79,12 +79,6 @@ func (vc *Git) Tags() []string {
 	return tags
 }
 
-// TagRef describes a tag's name with its reference hash.
-type TagRef struct {
-	Name string
-	Hash plumbing.Hash
-}
-
 // MasterTags lists all existing tags associated to commits of the master branch.
 func (vc *Git) MasterTags() []string {
 
