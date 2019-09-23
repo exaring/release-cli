@@ -79,11 +79,11 @@ func (vc *Git) Tags() []string {
 	return tags
 }
 
-// MasterTags lists all existing tags associated to commits of the master branch.
-func (vc *Git) MasterTags() []string {
+// BranchTags lists all existing tags associated to commits of the given branch.
+func (vc *Git) BranchTags(branchName string) []string {
 
-	// get master branch reference
-	branch, err := vc.client.Branch("master")
+	// get branch reference
+	branch, err := vc.client.Branch(branchName)
 	if err != nil {
 		return nil
 	}
@@ -92,16 +92,16 @@ func (vc *Git) MasterTags() []string {
 		return nil
 	}
 
-	// get all commit hashes of the master branch
+	// get all commit hashes of the given branch
 	logs, err := vc.client.Log(&git.LogOptions{
 		From: ref.Hash(),
 	})
 	if err != nil {
 		return nil
 	}
-	var masterCommits = make(map[plumbing.Hash]bool)
+	var branchCommits = make(map[plumbing.Hash]bool)
 	if err := logs.ForEach(func(commit *object.Commit) error {
-		masterCommits[commit.Hash] = true
+		branchCommits[commit.Hash] = true
 		return nil
 	}); err != nil {
 		return nil
@@ -128,14 +128,14 @@ func (vc *Git) MasterTags() []string {
 	}
 
 	// only return tags whose associated commit hash belongs to the master branch
-	var masterTags = make([]string, 0)
+	var branchTags = make([]string, 0)
 	for tag, commit := range tagsWithCommits {
-		if _, ok := masterCommits[commit]; ok {
-			masterTags = append(masterTags, tag)
+		if _, ok := branchCommits[commit]; ok {
+			branchTags = append(branchTags, tag)
 		}
 	}
 
-	return masterTags
+	return branchTags
 
 }
 
@@ -249,8 +249,8 @@ func (noop *NoOpRepository) Tags() []string {
 	return repository.Tags()
 }
 
-// MasterTags does nothing
-func (noop *NoOpRepository) MasterTags() []string {
+// BranchTags does nothing
+func (noop *NoOpRepository) BranchTags(branchName string) []string {
 	currentPath, err := os.Getwd()
 	if err != nil {
 		return make([]string, 0)
@@ -261,7 +261,7 @@ func (noop *NoOpRepository) MasterTags() []string {
 		return make([]string, 0)
 	}
 
-	return repository.MasterTags()
+	return repository.BranchTags(branchName)
 }
 
 // IsSafe does nothing.
