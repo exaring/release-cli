@@ -8,6 +8,8 @@ import (
 
 	"gopkg.in/src-d/go-git.v4/config"
 
+	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
 	"gopkg.in/src-d/go-git.v4/plumbing"
 
 	"gopkg.in/src-d/go-git.v4"
@@ -75,6 +77,66 @@ func (vc *Git) Tags() []string {
 	}
 
 	return tags
+}
+
+// BranchTags lists all existing tags associated to commits of the given branch.
+func (vc *Git) BranchTags(branchName string) []string {
+
+	// get branch reference
+	branch, err := vc.client.Branch(branchName)
+	if err != nil {
+		return nil
+	}
+	ref, err := vc.client.Reference(branch.Merge, true)
+	if err != nil {
+		return nil
+	}
+
+	// get all commit hashes of the given branch
+	logs, err := vc.client.Log(&git.LogOptions{
+		From: ref.Hash(),
+	})
+	if err != nil {
+		return nil
+	}
+	var branchCommits = make(map[plumbing.Hash]bool)
+	if err := logs.ForEach(func(commit *object.Commit) error {
+		branchCommits[commit.Hash] = true
+		return nil
+	}); err != nil {
+		return nil
+	}
+	logs.Close()
+
+	// get all tags of the repository with their associated commit hash
+	tIter, err := vc.client.Tags()
+	if err != nil {
+		return nil
+	}
+	var tagsWithCommits = make(map[string]plumbing.Hash)
+	if err := tIter.ForEach(func(ref *plumbing.Reference) error {
+		if annotedTag, err := vc.client.TagObject(ref.Hash()); err != plumbing.ErrObjectNotFound {
+			if annotedTag.TargetType == plumbing.CommitObject {
+				tagsWithCommits[ref.String()] = annotedTag.Target
+			}
+			return nil
+		}
+		tagsWithCommits[ref.String()] = ref.Hash()
+		return nil
+	}); err != nil {
+		return nil
+	}
+
+	// only return tags whose associated commit hash belongs to the master branch
+	var branchTags = make([]string, 0)
+	for tag, commit := range tagsWithCommits {
+		if _, ok := branchCommits[commit]; ok {
+			branchTags = append(branchTags, tag)
+		}
+	}
+
+	return branchTags
+
 }
 
 // IsSafe validate the state of the git repo and returns an error if the repo is unsafe like include uncommitted files
@@ -185,6 +247,21 @@ func (noop *NoOpRepository) Tags() []string {
 	}
 
 	return repository.Tags()
+}
+
+// BranchTags does nothing
+func (noop *NoOpRepository) BranchTags(branchName string) []string {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	repository, err := New(currentPath)
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	return repository.BranchTags(branchName)
 }
 
 // IsSafe does nothing.

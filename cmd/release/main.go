@@ -26,7 +26,7 @@ func main() {
 
 	var (
 		flagMajor, flagMinor, flagPatch, flagPre, dryRun, force bool
-		flagLog                                                 string
+		flagBranch, flagLog                                     string
 	)
 
 	app.Flags = []cli.Flag{
@@ -67,6 +67,12 @@ func main() {
 			EnvVar:      "FORCE",
 		},
 		cli.StringFlag{
+			Name:        "b, branch",
+			Destination: &flagBranch,
+			Usage:       "only track tags related to the given branch when creating new version tags.",
+			EnvVar:      "ONLY_BRANCH",
+		},
+		cli.StringFlag{
 			Name:        "l, log",
 			Destination: &flagLog,
 			Usage:       "specifics the log level of the output",
@@ -89,6 +95,8 @@ type Repository interface {
 	ExistsTag(version string) (bool, error)
 	// Tags lists all existing tags of the repository.
 	Tags() []string
+	// BranchTags lists all existing tags related to commits of the given branch.
+	BranchTags(branchName string) []string
 	// IsSafe validate the state of the repository and returns an error if the repository is unsafe like include uncommitted files
 	// or the local branch is behind the origin.
 	IsSafe(ctx context.Context) error
@@ -135,9 +143,18 @@ func run(ctx *cli.Context) error {
 		"Repository": currentPath,
 		"Dry":        dryModus,
 	}).Debug("Analyse the git repository")
-	currentTag, err := LatestTag(repo)
-	if err != nil {
-		return err
+
+	var currentTag version.Version
+	if ctx.IsSet("branch") {
+		currentTag, err = LatestBranchTag(repo, ctx.String("branch"))
+		if err != nil {
+			return err
+		}
+	} else {
+		currentTag, err = LatestTag(repo)
+		if err != nil {
+			return err
+		}
 	}
 	logger.WithFields(logrus.Fields{
 		"Repository": currentPath,
@@ -185,9 +202,16 @@ func run(ctx *cli.Context) error {
 		"Dry":        dryModus,
 	}).Debug("Pushing new tag to the origin repository")
 
-	currentTag, err = LatestTag(repo)
-	if err != nil {
-		return err
+	if ctx.IsSet("branch") {
+		currentTag, err = LatestBranchTag(repo, ctx.String("branch"))
+		if err != nil {
+			return err
+		}
+	} else {
+		currentTag, err = LatestTag(repo)
+		if err != nil {
+			return err
+		}
 	}
 	logger.WithFields(logrus.Fields{
 		"Repository": currentPath,
@@ -216,4 +240,25 @@ func LatestTag(vc Repository) (version.Version, error) {
 	}
 
 	return version.Version{}, fmt.Errorf("the version list is empty")
+}
+
+// LatestBranchTag returns the latest tag of the given branch.
+func LatestBranchTag(vc Repository, branchName string) (version.Version, error) {
+	var branchTags version.Versions
+	for _, tag := range vc.BranchTags(branchName) {
+		o, err := version.New(tag)
+		if err != nil {
+			return version.Version{}, err
+		}
+		branchTags = append(branchTags, o)
+	}
+
+	sort.Sort(branchTags)
+
+	if len(branchTags) > 0 {
+		return branchTags[len(branchTags)-1], nil
+	}
+
+	return version.Version{}, fmt.Errorf("the master branch version list is empty")
+
 }
