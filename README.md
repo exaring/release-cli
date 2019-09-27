@@ -45,16 +45,16 @@ COMMANDS:
      help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --major                increase major version part. [$RELEASE_MAJOR]
-   --minor                increase minor version part. [$RELEASE_MINOR]
-   --patch                increase patch version part. This is the default increased part. [$RELEASE_PATCH]
-   --pre                  increase release candidate version part. [$RELEASE_PRE]
-   --only-master          only track tags related to the master branch when creating new version tags. [ONLY_MASTER]
-   -d, --dry              do not change anything. just print the result. [$DRY_RUN]
-   -f, --force            ignore untracked & uncommitted changes. [$FORCE]
-   -l value, --log value  specifics the log level of the output [$LOG_LEVEL]
-   --help, -h             show help
-   --version, -v          print the version
+   --major                   increase major version part. [$RELEASE_MAJOR]
+   --minor                   increase minor version part. [$RELEASE_MINOR]
+   --patch                   increase patch version part. This is the default increased part. [$RELEASE_PATCH]
+   --pre                     increase release candidate version part. [$RELEASE_PRE]
+   -d, --dry                 do not change anything. just print the result. [$DRY_RUN]
+   -f, --force               ignore untracked & uncommitted changes. [$FORCE]
+   -b value, --branch value  only track tags related to the given branch when creating new version tags. [$ONLY_BRANCH]
+   -l value, --log value     specifics the log level of the output [$LOG_LEVEL]
+   --help, -h                show help
+   --version, -v             print the version
 ```
 
 ## Example
