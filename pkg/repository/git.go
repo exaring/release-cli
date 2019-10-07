@@ -70,6 +70,7 @@ func (vc *Git) Tags() []string {
 
 	var tags = make([]string, 0)
 	if err := tIter.ForEach(func(reference *plumbing.Reference) error {
+
 		tags = append(tags, reference.String())
 		return nil
 	}); err != nil {
@@ -197,9 +198,11 @@ func (vc *Git) IsBehind(ctx context.Context) (bool, error) {
 
 // CreateTag creates a local git tag.
 func (vc *Git) CreateTag(tag string) error {
-	name := plumbing.ReferenceName(fmt.Sprintf("refs/tags/%v", tag))
-	reference := plumbing.NewHashReference(name, plumbing.NewHash(vc.LatestCommitHash()))
-	return vc.client.Storer.SetReference(reference)
+	if _, err := vc.client.CreateTag(tag, plumbing.NewHash(vc.LatestCommitHash()), nil); err != nil {
+		return fmt.Errorf("could not create a new tag: %v", err)
+	}
+
+	return nil
 }
 
 // DeleteTag deletes a local git tag.

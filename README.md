@@ -61,31 +61,31 @@ GLOBAL OPTIONS:
 ```bash
 # release the next patch release (default)
 > release -l debug
-DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.1 repository=/tmp/dirty-repo
-INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v4.2.2
-DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
-DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
-INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.2.2
+DEBU[0000] Read the directory                           
+DEBU[0000] Analyse the git repository                    
+DEBU[0000] Detect latest tag of the repository            Tag=v4.2.1 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                   Tag=v4.2.2
+DEBU[0001] Tagging the current repository                 Version=v4.2.2
+DEBU[0004] Pushing new tag to the origin repository       Version=v4.2.2
+INFO[0004] Release new version                            Version=v4.2.2
 
 # release the next minor version
 > release -l debug -minor
-DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.2 repository=/tmp/dirty-repo
-INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v4.3.0
-DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
-DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
-INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v4.3.0
+DEBU[0000] Read the directory                            
+DEBU[0000] Analyse the git repository                    
+DEBU[0000] Detect latest tag of the repository            Tag=v4.2.2 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                   Tag=v4.3.0
+DEBU[0001] Tagging the current repository                 Version=v4.3.0
+DEBU[0004] Pushing new tag to the origin repository       Version=v4.3.0
+INFO[0004] Release new version                            Version=v4.3.0
 
 # release a major pre-release
 > release -l debug -major -pre
-DEBU[0000] Read the directory                            Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Analyse the git repository                    Dry=false Repository=/tmp/dirty-repo
-DEBU[0000] Detect latest tag of the repository           Dry=false Repository=/tmp/dirty-repo Tag=v4.2.1 repository=/tmp/dirty-repo
-INFO[0000] Create new releasing version                  Dry=false Repository=/tmp/dirty-repo Tag=v5.0.0-RC1
-DEBU[0001] Tagging the current repository                Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
-DEBU[0004] Pushing new tag to the origin repository      Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
-INFO[0004] Release new version                           Dry=false Repository=/tmp/dirty-repo Version=v5.0.0-RC1
+DEBU[0000] Read the directory                            
+DEBU[0000] Analyse the git repository                    
+DEBU[0000] Detect latest tag of the repository            Tag=v4.2.1 repository=/tmp/dirty-repo
+INFO[0000] Create new releasing version                   Tag=v5.0.0-RC1
+DEBU[0001] Tagging the current repository                 Version=v5.0.0-RC1
+DEBU[0004] Pushing new tag to the origin repository       Version=v5.0.0-RC1
+INFO[0004] Release new version                            Version=v5.0.0-RC1
 ```
