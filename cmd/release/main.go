@@ -122,7 +122,7 @@ func run(ctx *cli.Context) error {
 
 	currentPath, err := os.Getwd()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
 	logger.Debug("Read the directory")
@@ -130,7 +130,7 @@ func run(ctx *cli.Context) error {
 	var repo Repository
 	repo, err = repository.New(currentPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open the git repository metadata directory: %w", err)
 	}
 
 	if ctx.IsSet("dry") {
@@ -143,12 +143,12 @@ func run(ctx *cli.Context) error {
 	if ctx.IsSet("branch") {
 		currentTag, err = LatestBranchTag(repo, ctx.String("branch"))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch the tag on the given branch: %w", err)
 		}
 	} else {
 		currentTag, err = LatestTag(repo)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch the tag in the repository: %w", err)
 		}
 	}
 	logger.WithFields(logrus.Fields{
@@ -165,24 +165,24 @@ func run(ctx *cli.Context) error {
 	}).Info("Create new releasing version")
 
 	if err := repo.IsSafe(context.Background()); !ctx.IsSet("force") && err != nil {
-		return err
+		return fmt.Errorf("repository is in unsafe state and force is not set: %w", err)
 	}
 
 	if err := repo.CreateTag(currentTag.String()); err != nil {
-		if err := repo.DeleteTag(currentTag.String()); err != nil {
-			logger.WithError(err).Errorf("Couldn't remove the creates tag: %v", currentTag)
+		if deleteErr := repo.DeleteTag(currentTag.String()); deleteErr != nil {
+			logger.WithError(deleteErr).Errorf("Couldn't remove the creates tag: %v", currentTag)
 		}
-		return err
+		return fmt.Errorf("failed to create tag: %w", err)
 	}
 	logger.WithFields(logrus.Fields{
 		"Version": currentTag,
 	}).Debug("Tagging the current repository")
 
 	if err := repo.Push(context.Background()); err != nil {
-		if err := repo.DeleteTag(currentTag.String()); err != nil {
-			logger.WithError(err).Errorf("Couldn't remove the creates tag: %v", currentTag)
+		if deleteErr := repo.DeleteTag(currentTag.String()); deleteErr != nil {
+			logger.WithError(deleteErr).Errorf("Couldn't remove the creates tag: %v", currentTag)
 		}
-		return err
+		return fmt.Errorf("failed to push tag: %w", err)
 	}
 	logger.WithFields(logrus.Fields{
 		"Version": currentTag,
@@ -191,12 +191,12 @@ func run(ctx *cli.Context) error {
 	if ctx.IsSet("branch") {
 		currentTag, err = LatestBranchTag(repo, ctx.String("branch"))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch the tag on the given branch: %w", err)
 		}
 	} else {
 		currentTag, err = LatestTag(repo)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to fetch the tag in the repository: %w", err)
 		}
 	}
 

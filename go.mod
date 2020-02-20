@@ -1,6 +1,6 @@
 module github.com/exaring/release-cli
 
-go 1.12
+go 1.13
 
 require (
 	github.com/sirupsen/logrus v1.4.2
