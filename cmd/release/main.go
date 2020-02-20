@@ -149,7 +149,6 @@ func run(ctx *cli.Context) error {
 		currentTag, err = LatestBranchTag(repo, ctx.String("branch"))
 		if err != nil {
 			return fmt.Errorf("failed to fetch the tag on the given branch: %w", err)
-
 		}
 	} else {
 		currentTag, err = LatestTag(repo)
