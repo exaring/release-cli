@@ -17,7 +17,7 @@ const (
 	Pre
 
 	// RegExPatternVersionString is the RegEX to parse the version string and detected the major, minor, patch and pre version.
-	RegExPatternVersionString = `((\d+)\.(\d+)\.(\d+))(?:-RC([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?`
+	RegExPatternVersionString = `((\d+)\.(\d+)\.(\d+))(?:-RC\.?([\dA-Za-z\-]+(?:\.[\dA-Za-z\-]+)*))?`
 )
 
 // Version is the abstraction of the version.

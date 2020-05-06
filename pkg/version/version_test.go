@@ -100,7 +100,7 @@ func TestVersion_String(t *testing.T) {
 		expectedValue string
 	}{
 		{"v0.0.0"},
-		{"v1.1.1-RC1"},
+		{"v1.1.1-RC.1"},
 	}
 
 	for _, tc := range tt {

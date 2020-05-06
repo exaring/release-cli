@@ -8,9 +8,7 @@ import (
 
 	"github.com/exaring/release-cli/pkg/repository"
 	"github.com/exaring/release-cli/pkg/version"
-
 	"github.com/sirupsen/logrus"
-
 	"github.com/urfave/cli"
 )
 
