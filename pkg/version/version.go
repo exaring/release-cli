@@ -111,7 +111,7 @@ func (v Version) Byte() (version uint) {
 // String returns the version as string.
 func (v Version) String() (version string) {
 	if version = fmt.Sprintf("v%v.%v.%v", v[Major], v[Minor], v[Patch]); v.IsReleaseCandidate() {
-		version += fmt.Sprintf("-RC%v", v[Pre])
+		version += fmt.Sprintf("-RC.%v", v[Pre])
 	}
 	return
 }
