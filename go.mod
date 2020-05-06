@@ -3,8 +3,8 @@ module github.com/exaring/release-cli
 go 1.13
 
 require (
-	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.3.0
-	github.com/urfave/cli v1.20.0
-	gopkg.in/src-d/go-git.v4 v4.12.0
+	github.com/go-git/go-git/v5 v5.0.0
+	github.com/sirupsen/logrus v1.6.0
+	github.com/stretchr/testify v1.5.1
+	github.com/urfave/cli v1.22.4
 )
